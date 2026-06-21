@@ -1,0 +1,74 @@
+[package]
+name = "resonance-backend"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.83"
+authors = ["Resonance Team"]
+description = "صدى — a chrono-social, privacy-first platform. 100% Rust backend."
+
+[[bin]]
+name = "resonance-backend"
+path = "src/main.rs"
+
+[dependencies]
+# --- Async runtime & web framework ---
+tokio = { version = "1.42", features = ["full", "signal", "tracing"] }
+axum = { version = "0.7", features = ["ws", "macros", "http2"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace", "limit", "compression-gzip"] }
+hyper = "1.5"
+futures-util = "0.3"
+
+# --- Database ---
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "macros", "json", "migrate"] }
+
+# --- Redis ---
+redis = { version = "0.27", features = ["tokio-comp", "aio", "connection-manager", "streams"] }
+
+# --- Cryptography ---
+ed25519-dalek = { version = "2.1", features = ["pkcs8", "pem", "rand_core"] }
+sha2 = "0.10"
+hmac = "0.12"
+hkdf = "0.12"
+zeroize = { version = "1.8", features = ["derive", "zeroize_derive"] }
+rand = "0.8"
+hex = "0.4"
+base64 = "0.22"
+aes-gcm = "0.10"
+
+# --- AI moderation (CPU) ---
+candle-core = "0.7"
+candle-nn = "0.7"
+candle-transformers = "0.7"
+tokenizers = "0.20"
+
+# --- Scheduling ---
+tokio-cron-scheduler = "0.13"
+
+# --- Serialization ---
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# --- Errors & logging ---
+thiserror = "2.0"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+
+# --- Utils ---
+chrono = { version = "0.4", features = ["serde", "clock"] }
+uuid = { version = "1.11", features = ["v4", "serde"] }
+async-trait = "0.1"
+once_cell = "1.20"
+bytes = "1.9"
+url = "2.5"
+
+# --- RTB / HTTP client ---
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+panic = "abort"
