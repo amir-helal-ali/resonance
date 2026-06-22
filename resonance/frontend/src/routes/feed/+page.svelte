@@ -1,5 +1,7 @@
 <script lang="ts">
   import LiveFeed from '$components/LiveFeed.svelte';
+  import Composer from '$components/Composer.svelte';
+  import { session } from '$stores/session';
 </script>
 
 <main class="min-h-screen">
@@ -9,5 +11,11 @@
   <p class="text-center text-papyrus-300 text-sm mb-4">
     أول 48 ساعة من كل نبضة — بعد كده بتنتقل للملف الشخصي
   </p>
-  <LiveFeed />
+
+  <div class="max-w-2xl mx-auto px-4">
+    {#if $session.unlocked}
+      <Composer />
+    {/if}
+    <LiveFeed />
+  </div>
 </main>

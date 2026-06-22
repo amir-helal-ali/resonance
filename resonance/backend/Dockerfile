@@ -32,12 +32,12 @@ RUN cargo chef prepare --recipe-path recipe.json
 # 2b. Build dependencies only — this layer is cached across source changes.
 RUN cargo chef cook --release --recipe-path recipe.json
 
-# 2c. Compile the actual application.
+# 2c. Compile the actual application. Build BOTH binaries.
 COPY . .
 # SQLx offline mode: use pre-recorded query metadata (sqlx prepare).
 ENV SQLX_OFFLINE=true
 ENV OPENSSL_NO_VENDOR=0
-RUN cargo build --release --bin resonance-backend
+RUN cargo build --release --bins
 
 # ---------- Stage 3: runtime (run) ----------
 FROM debian:bookworm-slim AS runtime
@@ -52,8 +52,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 USER resonance
 WORKDIR /app
 
-# Copy the compiled binary and the SQL migrations (for runtime verification).
+# Copy the compiled binaries and the SQL migrations (for runtime verification).
 COPY --from=builder --chown=resonance:resonance /app/target/release/resonance-backend /app/resonance-backend
+COPY --from=builder --chown=resonance:resonance /app/target/release/blind-email-relay /app/blind-email-relay
 COPY --from=builder --chown=resonance:resonance /app/migrations /app/migrations
 
 # tini = proper PID 1 signal handling (so Tokio shuts down cleanly on SIGTERM).

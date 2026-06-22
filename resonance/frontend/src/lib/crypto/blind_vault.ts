@@ -104,7 +104,9 @@ export async function encryptEmail(
  * helper AND a `computeBlindIndexLocal` that uses a client-held key.
  */
 export async function computeBlindIndexServer(email: string): Promise<Uint8Array> {
-  const res = await fetch('/api/blind-index', {
+  const API_BASE =
+    (import.meta.env.VITE_PUBLIC_API_URL as string | undefined) ?? 'http://localhost:8080';
+  const res = await fetch(`${API_BASE}/blind-index`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),

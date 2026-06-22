@@ -130,12 +130,54 @@ pub async fn start(pool: PgPool) -> Result<JobScheduler, JobSchedulerError> {
                 Ok(r) => info!(released = r.rows_affected(), "moderation cooling released"),
                 Err(e) => error!(error = ?e, "cooling release failed"),
             }
+
+            // Summon juries for high-toxicity pulses that haven't been juried yet.
+            let candidates: Result<Vec<(uuid::Uuid,)>, _> = sqlx::query_as(
+                r#"
+                SELECT m.pulse_id FROM moderation_queue m
+                WHERE m.toxicity_score >= 0.9
+                  AND m.verdict = 'cooling'
+                  AND NOT EXISTS (SELECT 1 FROM jury_panels j WHERE j.pulse_id = m.pulse_id)
+                "#,
+            )
+            .fetch_all(&pool)
+            .await;
+            if let Ok(rows) = candidates {
+                for (pulse_id,) in rows {
+                    if let Err(e) = crate::handlers::jury::summon_for_pulse(&pool, pulse_id).await {
+                        error!(error = ?e, %pulse_id, "jury summon failed");
+                    }
+                }
+            }
         })
     })
     .await?;
     scheduler.add(job6).await?;
 
+    // ----- 7. jury panel expiry (every 5 min) -----
+    let pool7 = pool.clone();
+    let job7 = Job::new_async("0 */5 * * * *", move |_, _| {
+        let pool = pool7.clone();
+        Box::pin(async move {
+            let res = sqlx::query(
+                r#"
+                UPDATE jury_panels
+                SET final_verdict = 'expire', concluded_at = now()
+                WHERE final_verdict = 'pending' AND expires_at < now()
+                "#,
+            )
+            .execute(&pool)
+            .await;
+            match res {
+                Ok(r) => info!(expired = r.rows_affected(), "jury panels expired"),
+                Err(e) => error!(error = ?e, "jury expiry failed"),
+            }
+        })
+    })
+    .await?;
+    scheduler.add(job7).await?;
+
     scheduler.start().await?;
-    info!("cron scheduler started with 6 jobs");
+    info!("cron scheduler started with 7 jobs");
     Ok(scheduler)
 }

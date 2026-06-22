@@ -88,15 +88,35 @@ fn build_router(state: AppState) -> Router {
         .route("/pow/challenge", get(handlers::vault::issue_pow_challenge))
         .route("/register", post(handlers::vault::register))
         .route("/verify-otp", post(handlers::vault::verify_otp))
+        .route("/blind-index", post(handlers::blind_index::compute_blind_index_handler))
         .route("/feed/glow", get(handlers::pulses::get_glow_feed))
         .route("/ws", get(handlers::pulses::feed_ws));
 
     let protected_routes = Router::new()
+        // Pulses + interactions
         .route("/pulses", post(handlers::pulses::create_pulse))
-        .route("/presence/pulse", post(presence::pulse_presence))
+        .route("/pulses/:id/echo",   post(handlers::interactions::echo))
+        .route("/pulses/:id/save",   post(handlers::interactions::save))
+        .route("/pulses/:id/comment",post(handlers::interactions::comment))
+        .route("/pulses/:id/report", post(handlers::interactions::report))
+        // Connections (resonance sync)
+        .route("/connections/sync",        post(handlers::connections::sync))
+        .route("/connections",             get(handlers::connections::list_my_connections))
+        .route("/connections/suggest",     get(handlers::connections::suggest))
+        .route("/connections/:target",     axum::routing::delete(handlers::connections::unsync))
+        // Presence & traces
+        .route("/presence/pulse",    post(presence::pulse_presence))
         .route("/presence/:user_id", get(presence::list_presence))
-        .route("/traces", get(presence::list_my_traces))
-        .route("/rtb/auction", post(handlers::rtb::run_auction))
+        .route("/traces",            get(presence::list_my_traces))
+        // Goals (شموع الدعم)
+        .route("/goals",             post(handlers::goals::create_goal))
+        .route("/goals/:user_id",    get(handlers::goals::list_goals))
+        .route("/goals/:id/light",   post(handlers::goals::light_candle))
+        // Transient Jury
+        .route("/jury/summoned",     get(handlers::jury::list_summoned))
+        .route("/jury/:panel_id/vote", post(handlers::jury::cast_vote))
+        // RTB
+        .route("/rtb/auction",       post(handlers::rtb::run_auction))
         .layer(from_fn_with_state(
             state.clone(),
             middleware::signature::signature_middleware,
