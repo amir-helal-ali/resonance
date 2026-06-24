@@ -12,6 +12,7 @@ use axum::{extract::State, Json};
 use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::timeout;
@@ -154,6 +155,9 @@ pub async fn run_auction(
         .map_err(AppError::Db)?;
 
     let latency_ms = started.elapsed().as_millis() as u64;
+
+    // Bump metrics counter.
+    state.metrics.auctions_run.fetch_add(1, Ordering::Relaxed);
 
     Ok(Json(RunAuctionResponse {
         auction_id,

@@ -84,7 +84,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// in the signature middleware; public routes (health, register, pow) are not.
 fn build_router(state: AppState) -> Router {
     let public_routes = Router::new()
-        .route("/health", get(health))
+        .route("/health", get(handlers::observability::health))
+        .route("/ready", get(handlers::observability::ready))
+        .route("/metrics", get(handlers::observability::metrics))
         .route("/pow/challenge", get(handlers::vault::issue_pow_challenge))
         .route("/register", post(handlers::vault::register))
         .route("/verify-otp", post(handlers::vault::verify_otp))
@@ -128,9 +130,4 @@ fn build_router(state: AppState) -> Router {
         .layer(CorsLayer::very_permissive()) // tighten in production
         .layer(TraceLayer::new_for_http())
         .with_state(state)
-}
-
-/// GET /health — liveness probe.
-async fn health() -> &'static str {
-    "صدى alive"
 }

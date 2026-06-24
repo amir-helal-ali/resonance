@@ -1,0 +1,71 @@
+# ============================================================================
+# Resonance (صدى) — Development Docker Compose Override
+# Use with:  docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Adds:
+#   - Hot-reload volumes for Rust (cargo-watch) and SvelteKit (vite HMR)
+#   - Exposes DB and Redis ports to host for direct debugging
+#   - Relaxes healthcheck intervals for faster dev loops
+# ============================================================================
+
+version: "3.9"
+
+services:
+  db:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      target: builder  # stop at the builder stage so cargo-watch can run
+    container_name: resonance-backend-dev
+    environment:
+      RUST_LOG: "resonance=debug,axum=debug,tower_http=debug,sqlx=debug"
+    volumes:
+      # Live source code so cargo-watch can rebuild on changes.
+      - ./backend/src:/app/src:ro
+      - ./backend/migrations:/app/migrations:ro
+      - ./backend/Cargo.toml:/app/Cargo.toml:ro
+      # Persist the cargo registry across rebuilds (massive speedup).
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-target:/app/target
+    command: >
+      sh -c "cargo install cargo-watch --locked --version ^8.5 &&
+             cargo watch -x 'run --bin resonance-backend'"
+
+  frontend:
+    container_name: resonance-frontend-dev
+    environment:
+      NODE_ENV: "development"
+    volumes:
+      - ./frontend/src:/app/src:ro
+      - ./frontend/static:/app/static:ro
+      - ./frontend/package.json:/app/package.json:ro
+      - ./frontend/svelte.config.js:/app/svelte.config.js:ro
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js:ro
+      - ./frontend/postcss.config.js:/app/postcss.config.js:ro
+      - ./frontend/vite.config.ts:/app/vite.config.ts:ro
+      - ./frontend/tsconfig.json:/app/tsconfig.json:ro
+      - frontend-node-modules:/app/node_modules
+    command: ["pnpm", "dev", "--host", "0.0.0.0", "--port", "3000"]
+
+  relay:
+    build:
+      target: builder
+    container_name: resonance-relay-dev
+    environment:
+      RUST_LOG: "relay=debug"
+    volumes:
+      - ./backend/src:/app/src:ro
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-target:/app/target
+    command: ["cargo", "run", "--bin", "blind-email-relay"]
+
+volumes:
+  cargo-registry:
+  cargo-target:
+  frontend-node-modules:

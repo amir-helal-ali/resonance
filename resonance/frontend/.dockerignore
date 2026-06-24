@@ -1,0 +1,36 @@
+# ============================================================================
+# Resonance Frontend — .dockerignore
+# ============================================================================
+
+# Build artifacts
+build/
+.svelte-kit/
+
+# Dependencies (fetched inside the image)
+node_modules/
+
+# Tests
+test/
+tests/
+*.spec.ts
+*.test.ts
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+.github/
+
+# Docs
+*.md
+docs/

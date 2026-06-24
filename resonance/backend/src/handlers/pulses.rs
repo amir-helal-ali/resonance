@@ -13,6 +13,7 @@ use axum::{
 };
 use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::Ordering;
 use uuid::Uuid;
 
 use crate::{
@@ -125,6 +126,9 @@ pub async fn create_pulse(
             tracing::error!(error = ?e, %pulse_id, "moderation failed");
         }
     });
+
+    // 9. Bump the metrics counter.
+    state.metrics.pulses_created.fetch_add(1, Ordering::Relaxed);
 
     Ok(Json(CreatePulseResponse {
         pulse_id: pulse.id,

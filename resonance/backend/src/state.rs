@@ -7,12 +7,15 @@ use redis::aio::ConnectionManager;
 use sqlx::PgPool;
 use std::sync::Arc;
 
+use crate::handlers::{MetricsHandle, Moderator, RtbEngine};
+
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
     pub redis: ConnectionManager,
-    pub rtb: Arc<crate::handlers::rtb::RtbEngine>,
-    pub moderator: Arc<crate::handlers::moderation::Moderator>,
+    pub rtb: Arc<RtbEngine>,
+    pub moderator: Arc<Moderator>,
+    pub metrics: MetricsHandle,
 }
 
 impl AppState {
@@ -21,8 +24,9 @@ impl AppState {
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(3000);
-        let rtb = Arc::new(crate::handlers::rtb::RtbEngine::new(platform_share_bps));
-        let moderator = Arc::new(crate::handlers::moderation::Moderator::new());
-        Self { db, redis, rtb, moderator }
+        let rtb = Arc::new(RtbEngine::new(platform_share_bps));
+        let moderator = Arc::new(Moderator::new());
+        let metrics = metrics_handle();
+        Self { db, redis, rtb, moderator, metrics }
     }
 }

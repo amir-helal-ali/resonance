@@ -13,6 +13,7 @@ use axum::{
 };
 use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::Ordering;
 use uuid::Uuid;
 
 use crate::{
@@ -213,6 +214,14 @@ async fn record_interaction(
         .publish(format!("user:{}", author_id), event.to_string())
         .await
         .map_err(|e| AppError::Internal(anyhow::anyhow!("publish interaction: {e}")))?;
+
+    // 6. Bump the metrics counter for this interaction kind.
+    match kind {
+        "echo"    => { state.metrics.echoes.fetch_add(1, Ordering::Relaxed); }
+        "save"    => { state.metrics.saves.fetch_add(1, Ordering::Relaxed); }
+        "comment" => { state.metrics.comments.fetch_add(1, Ordering::Relaxed); }
+        _ => {}
+    }
 
     Ok(Json(InteractionResponse {
         interaction_id,
