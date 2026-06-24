@@ -1,0 +1,56 @@
+# Dependabot — صدى (Resonance)
+# Keeps dependencies fresh across all ecosystems.
+
+version: 2
+
+updates:
+  # ---- Rust backend ----
+  - package-ecosystem: "cargo"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "backend"]
+    reviewers: ["resonance-maintainers"]
+    groups:
+      # Group minor + patch bumps together; major bumps get their own PR.
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ---- Frontend (pnpm) ----
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "frontend"]
+    reviewers: ["resonance-maintainers"]
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ---- Docker base images ----
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "monthly"
+    labels: ["dependencies", "infra"]
+
+  - package-ecosystem: "docker"
+    directory: "/frontend"
+    schedule:
+      interval: "monthly"
+    labels: ["dependencies", "infra"]
+
+  # ---- GitHub Actions ----
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels: ["dependencies", "ci"]
