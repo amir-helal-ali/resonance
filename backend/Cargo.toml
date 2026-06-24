@@ -47,7 +47,7 @@ aes-gcm = "0.10"
 # --- AI moderation (CPU) ---
 candle-core = "0.7"
 candle-nn = "0.7"
-candle-transformers = "0.7"
+candle-transformers = "0.10"
 tokenizers = "0.20"
 
 # --- Scheduling ---
