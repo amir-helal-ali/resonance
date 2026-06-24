@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+   Resonance (صدى) — Global Styles
+   The "Breathing Interface" — Cairo UI, Amiri manifesto.
+   ============================================================================ */
+
+@font-face {
+  font-family: 'Cairo';
+  src: url('/fonts/Cairo-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cairo';
+  src: url('/fonts/Cairo-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Amiri';
+  src: url('/fonts/Amiri-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --papyrus:        #FBF8F1;
+  --astral-blue:    #0A1220;
+  --astral-deep:    #050A12;
+  --egyptian-gold:  #E5A91E;
+}
+
+html, body {
+  background: var(--astral-blue);
+  color: var(--papyrus);
+  font-family: 'Cairo', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* "Sun Cycle Aura" — a subtle gradient that drifts behind every pulse card.
+   The position is animated so the card "breathes" with the cycle of the sun. */
+.sun-cycle-aura {
+  background: linear-gradient(
+    90deg,
+    rgba(229, 169, 30, 0.12) 0%,    /* sunrise */
+    rgba(244, 196, 74, 0.06) 25%,   /* morning */
+    rgba(251, 216, 118, 0.10) 50%,  /* noon */
+    rgba(196, 139, 20, 0.08) 75%,   /* sunset */
+    rgba(124, 84, 7, 0.12) 100%     /* dusk */
+  );
+  background-size: 200% 200%;
+  animation: sun-cycle 60s linear infinite;
+}
+
+@keyframes sun-cycle {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Nile Flow transition for live feed items entering the DOM. */
+.nile-flow-enter {
+  animation: nile-flow 0.6s ease-out;
+}
+@keyframes nile-flow {
+  0%   { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0);  opacity: 1; }
+}
+
+/* The "Pulsing Now" golden aura. Only shown for resonance > 50%. */
+.aura-pulse {
+  animation: aura-pulse 2s ease-in-out infinite;
+}
+@keyframes aura-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.06); }
+}
+
+/* Custom scrollbar — keep it subtle on the dark background. */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--astral-deep); }
+::-webkit-scrollbar-thumb { background: var(--egyptian-gold); border-radius: 4px; opacity: 0.5; }
