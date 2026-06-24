@@ -7,7 +7,7 @@
 # This produces a ~45MB image for a fully-featured Axum + candle + SQLx backend.
 
 # ---------- Stage 1: chef (plan) ----------
-FROM rust:1.83-slim AS chef
+FROM rust:1.96-slim AS chef
 RUN apt-get update && apt-get install -y --no-install-recommends \
         pkg-config libssl-dev ca-certificates \
     && rm -rf /var/lib/apt/lists/*
