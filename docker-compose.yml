@@ -1,0 +1,210 @@
+# ============================================================================
+# Resonance (صدى) — Docker Compose Orchestration
+# A Chrono-Social & Privacy-First Platform
+# ============================================================================
+# Services:
+#   db        -> PostgreSQL 16 (persistent vault + relational state)
+#   redis     -> Redis 7 (live feed, ZSETs, Pub/Sub, presence, DM TTL)
+#   backend   -> Rust / Axum / Tokio (the cryptographic & RTB core)
+#   frontend  -> SvelteKit / Node 20 (the breathing interface)
+# ============================================================================
+# All services share an isolated internal network: `resonance-net`.
+# Only `frontend` exposes a port to the host (3000). The backend is reachable
+# internally as `http://backend:8080`. This is the Zero-Trust posture: the
+# cryptographic vault is never directly exposed to the public internet.
+# ============================================================================
+
+version: "3.9"
+
+networks:
+  resonance-net:
+    name: resonance-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  pg-data:
+    name: resonance-pg-data
+  redis-data:
+    name: resonance-redis-data
+
+services:
+  # --------------------------------------------------------------------------
+  # PostgreSQL 16 — The Persistent Vault
+  # Stores: users (blind vault), pulses (lifecycle), connections (resonance),
+  #         traces (transient visits), ad_auctions (RTB ledger).
+  # --------------------------------------------------------------------------
+  db:
+    image: postgres:16-bookworm
+    container_name: resonance-db
+    restart: unless-stopped
+    networks:
+      - resonance-net
+    environment:
+      POSTGRES_USER: resonance
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-resonance_dev_only_change_me}
+      POSTGRES_DB: resonance
+      # Hardening: never log statements containing OTP / blind indexes.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      PG_CTL_OPTIONS: "-o '-c log_statement=none -c log_min_duration_statement=2000'"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resonance -d resonance"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    # No host port exposed: only internal services may reach the vault.
+    expose:
+      - "5432"
+
+  # --------------------------------------------------------------------------
+  # Redis 7 — The Live Memory
+  # Stores: glow feed (ZSET by score), presence (Pulsing Now), DMs (TTL),
+  #         RTB bid streams (Pub/Sub), PoW nonces (TTL 60s).
+  # --------------------------------------------------------------------------
+  redis:
+    image: redis:7-bookworm
+    container_name: resonance-redis
+    restart: unless-stopped
+    networks:
+      - resonance-net
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --timeout 300
+      --tcp-keepalive 60
+      --rename-command FLUSHALL ""
+      --rename-command FLUSHDB ""
+      --rename-command DEBUG ""
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    expose:
+      - "6379"
+
+  # --------------------------------------------------------------------------
+  # Rust Backend — The Cryptographic Core
+  # Axum + Tokio + SQLx + candle + zeroize.
+  # Built from a multi-stage Dockerfile (see backend/Dockerfile).
+  # --------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: resonance-backend
+    restart: unless-stopped
+    networks:
+      - resonance-net
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # --- Runtime configuration (12-factor) ---
+      RUST_LOG: "resonance=info,axum=info,tower_http=info,sqlx=warn"
+      RUST_BACKTRACE: "1"
+      # --- Database (internal DNS) ---
+      DATABASE_URL: "postgres://resonance:${POSTGRES_PASSWORD:-resonance_dev_only_change_me}@db:5432/resonance"
+      SQLX_OFFLINE: "true"
+      # --- Redis (internal DNS) ---
+      REDIS_URL: "redis://redis:6379/0"
+      # --- Cryptographic anchors ---
+      # HMAC key for blind indexes — 32 bytes, base64. Rotate via secret manager.
+      BLIND_INDEX_KEY: "${BLIND_INDEX_KEY:-c3VwZXItc2VjcmV0LWJsaW5kLWluZGV4LWtleS0zMi1ieXRlcw==}"
+      # PoW difficulty: number of leading zero bits required.
+      POW_DIFFICULTY_BITS: "20"
+      # --- RTB Engine ---
+      RTB_AUCTION_TIMEOUT_MS: "45"
+      RTB_PLATFORM_SHARE_BPS: "3000"   # 30% platform, 70% creator (basis points)
+      # --- Lifecycle cron schedule (UTC, cron syntax) ---
+      CRON_EVAPORATE:       "0 3 * * * *"   # 03:00 daily — 30-day evaporation
+      CRON_IMMORTAL_DECAY:  "0 4 * * 0"     # 04:00 weekly Sunday — 6-month immortal decay
+      CRON_RESONANCE_DECAY: "*/15 * * * * *" # every 15 min — 7-day resonance evaporation
+      CRON_MODERATION:      "*/2 * * * * *"  # every 2 min — AI toxicity cooling
+      # --- Server bind ---
+      BIND_ADDR: "0.0.0.0:8080"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
+
+  # --------------------------------------------------------------------------
+  # SvelteKit Frontend — The Breathing Interface
+  # Built via `adapter-node`, served by Node 20.
+  # --------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: resonance-frontend
+    restart: unless-stopped
+    networks:
+      - resonance-net
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: "production"
+      # The browser-facing API URL. In production put a TLS-terminating
+      # reverse proxy in front and set this to the public origin.
+      PUBLIC_API_URL: "http://localhost:8080"
+      PUBLIC_WS_URL: "ws://localhost:8080/ws"
+      ORIGIN: "http://localhost:3000"
+      PORT: "3000"
+      HOST: "0.0.0.0"
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # --------------------------------------------------------------------------
+  # Blind Email Relay — Standalone Worker
+  # Consumes the `blind_email_relay:jobs` Redis list. Sends OTP emails via
+  # SMTP WITHOUT ever persisting the cleartext email. Runs as a separate
+  # container so it can be placed behind a tighter network policy.
+  # --------------------------------------------------------------------------
+  relay:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: resonance-relay
+    restart: unless-stopped
+    networks:
+      - resonance-net
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["/app/blind-email-relay"]
+    environment:
+      RUST_LOG: "relay=info"
+      REDIS_URL: "redis://redis:6379/0"
+      SMTP_HOST: "${SMTP_HOST:-127.0.0.1}"
+      SMTP_PORT: "${SMTP_PORT:-25}"
+      SMTP_FROM: "${SMTP_FROM:-no-reply@resonance.local}"
+    # No host port — the relay only talks to internal Redis + external SMTP.
+    expose:
+      - "25"

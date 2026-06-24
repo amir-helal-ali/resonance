@@ -1,0 +1,36 @@
+# ============================================================================
+# Resonance Backend — .dockerignore
+# Skip files that should never enter the build context.
+# ============================================================================
+
+# Build artifacts
+target/
+**/target/
+
+# SQLx offline metadata (regenerated locally)
+.sqlx/
+
+# Tests & benches
+tests/
+benches/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+.github/
+
+# Docs (kept in repo, not needed in image)
+*.md
+docs/

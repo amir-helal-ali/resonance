@@ -1,0 +1,29 @@
+# Git-ignored patterns for the Resonance monorepo
+
+# Rust
+backend/target/
+backend/**/target/
+backend/.sqlx/
+backend/*.pdb
+
+# SvelteKit / Node
+frontend/.svelte-kit/
+frontend/build/
+frontend/node_modules/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Secrets — NEVER commit
+.env
+.env.local
+.env.*.local
+secrets/
+*.pem
+*.key
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
