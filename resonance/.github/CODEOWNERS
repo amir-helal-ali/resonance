@@ -1,0 +1,43 @@
+# CODEOWNERS — صدى (Resonance)
+# Each line: <pattern> <owner1> <owner2> ...
+# Owners are automatically requested as reviewers when their paths change.
+
+# Default owner for everything not explicitly listed below
+*                        @resonance-maintainers
+
+# Cryptography — must be reviewed by a security-trained maintainer
+/backend/src/crypto/                 @resonance-security
+/backend/src/middleware/             @resonance-security
+/backend/src/handlers/vault.rs       @resonance-security
+/backend/src/handlers/blind_index.rs @resonance-security
+/frontend/src/lib/crypto/            @resonance-security
+/frontend/src/lib/workers/           @resonance-security
+/backend/src/bin/                    @resonance-security
+
+# Database schema
+/backend/migrations/                 @resonance-db
+/backend/src/db/                     @resonance-db
+
+# Lifecycle & cron
+/backend/src/cron/                   @resonance-backend
+/backend/src/handlers/pulses.rs      @resonance-backend
+/backend/src/handlers/moderation.rs  @resonance-backend
+
+# Moderation & jury
+/backend/src/handlers/jury.rs        @resonance-trust-safety
+/backend/src/handlers/interactions.rs @resonance-trust-safety
+
+# RTB / monetization
+/backend/src/handlers/rtb.rs         @resonance-payments
+
+# Frontend UI
+/frontend/src/lib/components/        @resonance-frontend
+/frontend/src/routes/                @resonance-frontend
+/frontend/tailwind.config.js         @resonance-frontend
+
+# Infra
+/docker-compose.yml                  @resonance-infra
+/docker-compose.dev.yml              @resonance-infra
+/backend/Dockerfile                  @resonance-infra
+/frontend/Dockerfile                 @resonance-infra
+/.github/workflows/                  @resonance-infra
