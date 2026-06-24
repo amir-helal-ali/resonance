@@ -48,7 +48,7 @@ aes-gcm = "0.10"
 candle-core = "0.7"
 candle-nn = "0.7"
 candle-transformers = "0.7"
-tokenizers = "0.20"
+tokenizers = "0.23"
 
 # --- Scheduling ---
 tokio-cron-scheduler = "0.13"
