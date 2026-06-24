@@ -1,6 +1,6 @@
 # صدى — Resonance
 
-[![CI](https://github.com/resonance-project/resonance/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/resonance-project/resonance/actions/workflows/ci.yml)
+[![CI](https://github.com/amir-helal-ali/resonance/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/amir-helal-ali/resonance/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-egyptian-gold.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.83+-orange.svg)](https://www.rust-lang.org/)
 [![SvelteKit](https://img.shields.io/badge/SvelteKit-2.x-ff3e00.svg)](https://kit.svelte.dev/)
@@ -25,7 +25,7 @@
 ## Quick Start
 
 ```bash
-git clone https://github.com/resonance-project/resonance.git
+git clone https://github.com/amir-helal-ali/resonance.git
 cd resonance
 cp .env.example .env       # then edit secrets
 make up                    # builds + starts all 5 services
@@ -193,10 +193,10 @@ Default: 30% platform / 70% creator. Atomic via Postgres transaction.
 
 - 📜 [Contributing Guide](CONTRIBUTING.md) — coding standards, PR process, areas needing help
 - 🔒 [Security Policy](SECURITY.md) — threat model, vulnerability disclosure, crypto bill of materials
-- 🏛️ [Code of Conduct](https://github.com/resonance-project/resonance/blob/main/.github/CODE_OF_CONDUCT.md) — be respectful
-- 🐛 [Report a Bug](https://github.com/resonance-project/resonance/issues/new?template=bug_report.md)
-- ✨ [Request a Feature](https://github.com/resonance-project/resonance/issues/new?template=feature_request.md)
-- 💬 [Discussions](https://github.com/resonance-project/resonance/discussions) — questions, ideas, announcements
+- 🏛️ [Code of Conduct](https://github.com/amir-helal-ali/resonance/blob/main/.github/CODE_OF_CONDUCT.md) — be respectful
+- 🐛 [Report a Bug](https://github.com/amir-helal-ali/resonance/issues/new?template=bug_report.md)
+- ✨ [Request a Feature](https://github.com/amir-helal-ali/resonance/issues/new?template=feature_request.md)
+- 💬 [Discussions](https://github.com/amir-helal-ali/resonance/discussions) — questions, ideas, announcements
 
 ## Roadmap
 
