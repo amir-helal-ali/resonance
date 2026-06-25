@@ -177,7 +177,24 @@ pub async fn start(pool: PgPool) -> Result<JobScheduler, JobSchedulerError> {
     .await?;
     scheduler.add(job7).await?;
 
+    // ----- 8. prune expired DMs (hourly) -----
+    let pool8 = pool.clone();
+    let job8 = Job::new_async("0 0 * * * *", move |_, _| {
+        let pool = pool8.clone();
+        Box::pin(async move {
+            let res = sqlx::query("DELETE FROM direct_messages WHERE expires_at < now()")
+                .execute(&pool)
+                .await;
+            match res {
+                Ok(r) => info!(pruned = r.rows_affected(), "DMs pruned"),
+                Err(e) => error!(error = ?e, "DM prune failed"),
+            }
+        })
+    })
+    .await?;
+    scheduler.add(job8).await?;
+
     scheduler.start().await?;
-    info!("cron scheduler started with 7 jobs");
+    info!("cron scheduler started with 8 jobs");
     Ok(scheduler)
 }

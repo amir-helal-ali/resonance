@@ -120,7 +120,7 @@ resonance/
             └── jury/+page.svelte         # محكمة عابرة
 ```
 
-## The Seven Cron Jobs
+## The Eight Cron Jobs
 
 | Job | Schedule | Purpose |
 |---|---|---|
@@ -131,6 +131,7 @@ resonance/
 | `prune_traces` | hourly | Delete traces past their 7-day TTL |
 | `moderation_cooling_release` | every 2 min | Release cooled pulses + summon juries for toxicity ≥ 0.9 |
 | `jury_panel_expiry` | every 5 min | Expire jury panels past their 24h window |
+| `prune_dms` | hourly | Delete DMs past their 30-day TTL |
 
 ## Privacy Model
 
@@ -166,15 +167,18 @@ Default: 30% platform / 70% creator. Atomic via Postgres transaction.
 | POST | `/blind-index` | Compute HMAC blind index for email |
 | GET  | `/feed/glow` | Top 50 live glow pulses |
 | GET  | `/ws` | Live Gravity Feed WebSocket |
+| GET  | `/ws/personal?user_id=...` | Personal notifications WS (DMs, jury, etc.) |
 
 ### Protected (Ed25519 signature required)
 | Method | Path | Purpose |
 |---|---|---|
 | POST   | `/pulses` | Create a new نبضة |
 | POST   | `/pulses/:id/echo` | Amplify a pulse |
-| POST   | `/pulses/:id/save` | Bookmark a pulse |
+| POST   | `/pulses/:id/save` | Bookmark a pulse (resonance bump) |
 | POST   | `/pulses/:id/comment` | Encrypted comment |
 | POST   | `/pulses/:id/report` | Flag for jury (3 reports → summon) |
+| POST   | `/pulses/:id/save-bookmark` | Add to private saved list (with note) |
+| DELETE | `/pulses/:id/save-bookmark` | Remove from saved |
 | POST   | `/connections/sync` | Bump resonance with another user |
 | GET    | `/connections` | List my resonances (≥5) |
 | GET    | `/connections/suggest` | Co-Resonance suggestions (Jaccard) |
@@ -188,6 +192,22 @@ Default: 30% platform / 70% creator. Atomic via Postgres transaction.
 | GET    | `/jury/summoned` | Panels where I'm a juror |
 | POST   | `/jury/:panel_id/vote` | Cast uphold/release vote |
 | POST   | `/rtb/auction` | Run a Vickrey auction + atomic rev-share |
+| POST   | `/dms` | Send an encrypted DM (X25519 ECDH) |
+| GET    | `/dms?with_user=...` | List DMs with a user (30d TTL) |
+| GET    | `/dms/conversations` | List my DM conversations |
+| GET    | `/notifications` | My notification feed |
+| GET    | `/notifications/unread-count` | Quick count for navbar badge |
+| POST   | `/notifications/:id/read` | Mark one as read |
+| POST   | `/notifications/read-all` | Mark all as read |
+| GET    | `/search?q=...&kind=...` | Search users + hashtags |
+| GET    | `/search/hashtag/:tag` | Pulses with a hashtag |
+| PATCH  | `/settings/profile` | Update imprint / horizon |
+| POST   | `/settings/rotate-key` | Rotate Ed25519 keypair |
+| DELETE | `/settings/account` | Permanently delete account (cascades) |
+| GET    | `/settings/blocks` | List blocked users |
+| POST   | `/settings/blocks` | Block a user |
+| DELETE | `/settings/blocks/:user_id` | Unblock a user |
+| GET    | `/settings/saved` | My saved pulses (private) |
 
 ## Contributing & Community
 

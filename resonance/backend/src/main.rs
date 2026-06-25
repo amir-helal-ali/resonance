@@ -83,24 +83,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// Build the full Axum router. Routes that require a signature are wrapped
 /// in the signature middleware; public routes (health, register, pow) are not.
 fn build_router(state: AppState) -> Router {
-    let public_routes = Router::new()
+    // Public routes: rate-limited strictly (register, blind-index, verify-otp).
+    let public_strict = Router::new()
+        .route("/register", post(handlers::vault::register))
+        .route("/verify-otp", post(handlers::vault::verify_otp))
+        .route("/blind-index", post(handlers::blind_index::compute_blind_index_handler))
+        .layer(from_fn_with_state(
+            state.clone(),
+            middleware::rate_limit_strict,
+        ));
+
+    let public_standard = Router::new()
         .route("/health", get(handlers::observability::health))
         .route("/ready", get(handlers::observability::ready))
         .route("/metrics", get(handlers::observability::metrics))
         .route("/pow/challenge", get(handlers::vault::issue_pow_challenge))
-        .route("/register", post(handlers::vault::register))
-        .route("/verify-otp", post(handlers::vault::verify_otp))
-        .route("/blind-index", post(handlers::blind_index::compute_blind_index_handler))
         .route("/feed/glow", get(handlers::pulses::get_glow_feed))
-        .route("/ws", get(handlers::pulses::feed_ws));
+        .route("/ws", get(handlers::pulses::feed_ws))
+        .route("/ws/personal", get(handlers::personal_ws::personal_ws))
+        .layer(from_fn_with_state(
+            state.clone(),
+            middleware::rate_limit_ws,
+        ));
 
+    // Protected routes: signature + standard rate limit.
     let protected_routes = Router::new()
         // Pulses + interactions
         .route("/pulses", post(handlers::pulses::create_pulse))
-        .route("/pulses/:id/echo",   post(handlers::interactions::echo))
-        .route("/pulses/:id/save",   post(handlers::interactions::save))
-        .route("/pulses/:id/comment",post(handlers::interactions::comment))
-        .route("/pulses/:id/report", post(handlers::interactions::report))
+        .route("/pulses/:id/echo",           post(handlers::interactions::echo))
+        .route("/pulses/:id/save",           post(handlers::interactions::save))
+        .route("/pulses/:id/comment",        post(handlers::interactions::comment))
+        .route("/pulses/:id/report",         post(handlers::interactions::report))
+        .route("/pulses/:id/save-bookmark",  post(handlers::settings::save_bookmark))
         // Connections (resonance sync)
         .route("/connections/sync",        post(handlers::connections::sync))
         .route("/connections",             get(handlers::connections::list_my_connections))
@@ -119,13 +133,40 @@ fn build_router(state: AppState) -> Router {
         .route("/jury/:panel_id/vote", post(handlers::jury::cast_vote))
         // RTB
         .route("/rtb/auction",       post(handlers::rtb::run_auction))
+        // DMs
+        .route("/dms",               post(handlers::dms::send_dm))
+        .route("/dms",               get(handlers::dms::list_dms))
+        .route("/dms/conversations", get(handlers::dms::list_conversations))
+        // Notifications
+        .route("/notifications",                 get(handlers::notifications::list_notifications))
+        .route("/notifications/unread-count",    get(handlers::notifications::unread_count))
+        .route("/notifications/read-all",        post(handlers::notifications::mark_all_read))
+        .route("/notifications/:id/read",        post(handlers::notifications::mark_read))
+        // Search
+        .route("/search",                get(handlers::search::search))
+        .route("/search/hashtag/:tag",   get(handlers::search::pulses_by_hashtag))
+        // Settings
+        .route("/settings/profile",     axum::routing::patch(handlers::settings::update_profile))
+        .route("/settings/rotate-key",  post(handlers::settings::rotate_key))
+        .route("/settings/account",     axum::routing::delete(handlers::settings::delete_account))
+        .route("/settings/blocks",      get(handlers::settings::list_blocks))
+        .route("/settings/blocks",      post(handlers::settings::block_user))
+        .route("/settings/blocks/:user_id", axum::routing::delete(handlers::settings::unblock_user))
+        .route("/settings/saved",       get(handlers::settings::list_saved))
+        .route("/pulses/:id/save-bookmark", post(handlers::settings::save_bookmark))
+        .route("/pulses/:id/save-bookmark", axum::routing::delete(handlers::settings::remove_bookmark))
         .layer(from_fn_with_state(
             state.clone(),
             middleware::signature::signature_middleware,
+        ))
+        .layer(from_fn_with_state(
+            state.clone(),
+            middleware::rate_limit_standard,
         ));
 
     Router::new()
-        .merge(public_routes)
+        .merge(public_strict)
+        .merge(public_standard)
         .merge(protected_routes)
         .layer(CorsLayer::very_permissive()) // tighten in production
         .layer(TraceLayer::new_for_http())
