@@ -145,16 +145,32 @@ fn build_router(state: AppState) -> Router {
         // Search
         .route("/search",                get(handlers::search::search))
         .route("/search/hashtag/:tag",   get(handlers::search::pulses_by_hashtag))
+        // Discover (trending + suggested users)
+        .route("/discover/trending",         get(handlers::discover::trending_hashtags))
+        .route("/discover/suggested-users",  get(handlers::discover::suggested_users))
+        .route("/discover/hashtag/:tag",     get(handlers::discover::hashtag_pulses))
+        // User lookup by username
+        .route("/users/by-username/:username", get(handlers::discover::lookup_by_username))
+        // Reposts
+        .route("/pulses/repost",            post(handlers::reposts::repost))
+        .route("/pulses/:id/reposts",       get(handlers::reposts::list_reposts))
+        // Media attachments
+        .route("/media",                    post(handlers::media::upload_media).get(handlers::media::list_media))
         // Settings
         .route("/settings/profile",     axum::routing::patch(handlers::settings::update_profile))
         .route("/settings/rotate-key",  post(handlers::settings::rotate_key))
         .route("/settings/account",     axum::routing::delete(handlers::settings::delete_account))
-        .route("/settings/blocks",      get(handlers::settings::list_blocks))
-        .route("/settings/blocks",      post(handlers::settings::block_user))
+        .route("/settings/blocks",      get(handlers::settings::list_blocks).post(handlers::settings::block_user))
         .route("/settings/blocks/:user_id", axum::routing::delete(handlers::settings::unblock_user))
         .route("/settings/saved",       get(handlers::settings::list_saved))
-        .route("/pulses/:id/save-bookmark", post(handlers::settings::save_bookmark))
-        .route("/pulses/:id/save-bookmark", axum::routing::delete(handlers::settings::remove_bookmark))
+        .route(
+            "/pulses/:id/save-bookmark",
+            post(handlers::settings::save_bookmark).delete(handlers::settings::remove_bookmark),
+        )
+        .route(
+            "/settings/notifications",
+            get(handlers::discover::get_notif_prefs).patch(handlers::discover::update_notif_prefs),
+        )
         .layer(from_fn_with_state(
             state.clone(),
             middleware::signature::signature_middleware,

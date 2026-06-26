@@ -23,6 +23,7 @@
     "vite": "^5.4.11"
   },
   "dependencies": {
+    "@noble/curves": "^1.6.0",
     "@noble/ed25519": "^2.1.0",
     "@noble/hashes": "^1.6.0",
     "ws": "^8.18.0"

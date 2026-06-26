@@ -4,15 +4,18 @@
 
 pub mod blind_index;
 pub mod connections;
+pub mod discover;
 pub mod dms;
 pub mod goals;
 pub mod interactions;
 pub mod jury;
+pub mod media;
 pub mod moderation;
 pub mod notifications;
 pub mod observability;
 pub mod personal_ws;
 pub mod pulses;
+pub mod reposts;
 pub mod rtb;
 pub mod search;
 pub mod settings;

@@ -120,7 +120,7 @@ resonance/
             └── jury/+page.svelte         # محكمة عابرة
 ```
 
-## The Eight Cron Jobs
+## The Nine Cron Jobs
 
 | Job | Schedule | Purpose |
 |---|---|---|
@@ -132,6 +132,7 @@ resonance/
 | `moderation_cooling_release` | every 2 min | Release cooled pulses + summon juries for toxicity ≥ 0.9 |
 | `jury_panel_expiry` | every 5 min | Expire jury panels past their 24h window |
 | `prune_dms` | hourly | Delete DMs past their 30-day TTL |
+| `refresh_trending_hashtags` | every 15 min | Refresh the `trending_hashtags_24h` materialized view |
 
 ## Privacy Model
 
@@ -208,6 +209,16 @@ Default: 30% platform / 70% creator. Atomic via Postgres transaction.
 | POST   | `/settings/blocks` | Block a user |
 | DELETE | `/settings/blocks/:user_id` | Unblock a user |
 | GET    | `/settings/saved` | My saved pulses (private) |
+| GET    | `/discover/trending` | Top 20 hashtags in last 24h (materialized view) |
+| GET    | `/discover/suggested-users` | Co-Resonance suggestions + badges |
+| GET    | `/discover/hashtag/:tag` | Pulses with a specific hashtag |
+| GET    | `/users/by-username/:username` | Public profile lookup by username |
+| POST   | `/pulses/repost` | Repost (with optional quote comment) |
+| GET    | `/pulses/:id/reposts` | List reposts of a pulse |
+| POST   | `/media` | Upload an encrypted media attachment (≤10 MB) |
+| GET    | `/media?pulse_id=...` | List media for a pulse |
+| GET    | `/settings/notifications` | My notification preferences |
+| PATCH  | `/settings/notifications` | Update notification prefs + Web Push subscription |
 
 ## Contributing & Community
 

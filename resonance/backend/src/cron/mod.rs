@@ -194,7 +194,24 @@ pub async fn start(pool: PgPool) -> Result<JobScheduler, JobSchedulerError> {
     .await?;
     scheduler.add(job8).await?;
 
+    // ----- 9. refresh trending hashtags view (every 15 min) -----
+    let pool9 = pool.clone();
+    let job9 = Job::new_async("0 */15 * * * *", move |_, _| {
+        let pool = pool9.clone();
+        Box::pin(async move {
+            let res = sqlx::query("REFRESH MATERIALIZED VIEW CONCURRENTLY trending_hashtags_24h")
+                .execute(&pool)
+                .await;
+            match res {
+                Ok(_) => info!("trending hashtags view refreshed"),
+                Err(e) => error!(error = ?e, "trending refresh failed"),
+            }
+        })
+    })
+    .await?;
+    scheduler.add(job9).await?;
+
     scheduler.start().await?;
-    info!("cron scheduler started with 8 jobs");
+    info!("cron scheduler started with 9 jobs");
     Ok(scheduler)
 }

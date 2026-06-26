@@ -45,6 +45,7 @@
   const navItems = [
     { href: '/feed',         label: 'الخلاصة',    icon: '🌊' },
     { href: '/search',       label: 'بحث',        icon: '🔍' },
+    { href: '/discover',     label: 'استكشف',     icon: '✨' },
     { href: '/dms',          label: 'رسائل',      icon: '💬', badge: 'dm' },
     { href: '/notifications',label: 'إشعارات',    icon: '🔔', badge: 'notif' },
     { href: '/saved',        label: 'محفوظات',    icon: '⭐' },
